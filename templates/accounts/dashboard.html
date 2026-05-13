@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Account - Tiny Anthems{% endblock %}
+{% block content %}
+<section class="dashboard-shell">
+  <div class="dashboard-hero">
+    <p class="eyebrow">Your account</p>
+    <h1>{{ balance }} credit{% if balance != 1 %}s{% endif %}</h1>
+    <p>Signed in as {{ request.user.email }}. Credits and songs are tied to this email.</p>
+    <div class="hero-actions">
+      <a class="button primary" href="{% url 'songs:create' %}">Make a Song</a>
+      <a class="button secondary" href="{% url 'web:home' %}#pricing">Buy Credits</a>
+    </div>
+  </div>
+
+  <section class="dashboard-section">
+    <div class="section-heading compact-heading">
+      <p class="eyebrow">Songs</p>
+      <h2>Your previous songs</h2>
+    </div>
+    {% if songs %}
+      <div class="history-list">
+        {% for song in songs %}
+          <article class="history-row">
+            <div>
+              <h3>{{ song.generated_title }}</h3>
+              <p>{{ song.get_occasion_display }} · {{ song.get_vibe_display }} · {{ song.get_status_display }}</p>
+            </div>
+            <a class="button secondary" href="{% url 'songs:detail' song.pk song.access_token %}">Open</a>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p>No songs yet. Make your first tiny anthem when you’re ready.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="dashboard-section">
+    <div class="section-heading compact-heading">
+      <p class="eyebrow">Credits</p>
+      <h2>Recent purchases</h2>
+    </div>
+    {% if purchases %}
+      <div class="history-list">
+        {% for purchase in purchases %}
+          <article class="history-row">
+            <div>
+              <h3>{{ purchase.credit_pack.credits_included }} credit{% if purchase.credit_pack.credits_included != 1 %}s{% endif %}</h3>
+              <p>{{ purchase.get_status_display }} · ${{ purchase.credit_pack.price_dollars|floatformat:2 }}</p>
+            </div>
+            <span class="status-pill">{{ purchase.created_at|date:"M j, Y" }}</span>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p>No credit purchases yet.</p>
+      </div>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

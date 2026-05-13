@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Make a Song - Tiny Anthems{% endblock %}
+{% block content %}
+<section class="form-shell">
+  <div>
+    <p class="eyebrow">Guided song request</p>
+    <h1>Tell us who this tiny anthem is for.</h1>
+    <p>No blank prompt box. Just the good details: names, occasion, jokes, and the vibe.</p>
+  </div>
+  <form class="song-form" method="post">
+    {% csrf_token %}
+    {% if form.errors %}
+      <div class="error-summary" role="alert">
+        <strong>Almost there.</strong>
+        <p>Please fix the highlighted fields and submit again.</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+    {% for field in form %}
+      {% if field.name != "email" or not request.user.is_authenticated %}
+        <label class="{% if field.errors %}field-error{% endif %}">
+          {{ field.label }}
+          {{ field }}
+          {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+          {{ field.errors }}
+        </label>
+      {% endif %}
+    {% endfor %}
+    {% if request.user.is_authenticated %}
+      <p class="form-note">Song access and credit balance will use {{ request.user.email }}.</p>
+    {% endif %}
+    <button class="button primary" type="submit">Review Song Request</button>
+  </form>
+</section>
+{% endblock %}

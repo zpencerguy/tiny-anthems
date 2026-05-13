@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Sign In - Tiny Anthems{% endblock %}
+{% block content %}
+<section class="login-shell">
+  <div class="login-copy">
+    <p class="eyebrow">Your tiny anthem account</p>
+    <h1>Sign in to keep credits and songs together.</h1>
+    <p>Use one email for credits, song requests, downloads, and private song links.</p>
+  </div>
+  <div class="login-panel">
+    <a class="button google disabled" href="{% url 'accounts:google' %}" aria-disabled="true">Continue with Google</a>
+    <p class="login-note">Google sign-in is ready for OAuth setup once credentials are configured.</p>
+    <div class="divider"><span>or</span></div>
+    <form method="post" class="song-form compact-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% if form.errors %}
+        <div class="error-summary" role="alert">
+          <strong>Check your email address.</strong>
+          {{ form.errors }}
+        </div>
+      {% endif %}
+      {% for field in form %}
+        <label>{{ field.label }}{{ field }}</label>
+      {% endfor %}
+      <button class="button primary" type="submit">Continue with Email</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="share-page">
+  <p class="eyebrow">Payment received</p>
+  <h1>Your credits are on the way.</h1>
+  <p>Once Stripe confirms the purchase, your credits will be added to your email balance.</p>
+  <a class="button primary" href="{% url 'songs:create' %}">Make a Song</a>
+</section>
+{% endblock %}

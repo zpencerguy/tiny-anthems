@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ song_request.generated_title }} - Tiny Anthems{% endblock %}
+{% block content %}
+<section class="detail-shell">
+  <div class="summary-panel">
+    <p class="eyebrow">{{ song_request.get_status_display }}</p>
+    <h1>{{ song_request.generated_title }}</h1>
+    <dl>
+      <div><dt>Recipient</dt><dd>{{ song_request.recipient_name }}</dd></div>
+      <div><dt>Occasion</dt><dd>{{ song_request.get_occasion_display }}</dd></div>
+      <div><dt>Vibe</dt><dd>{{ song_request.get_vibe_display }}</dd></div>
+      <div><dt>Tone</dt><dd>{{ song_request.get_tone_display }}</dd></div>
+      <div><dt>Credits</dt><dd>{{ balance }}</dd></div>
+    </dl>
+  </div>
+  <div class="action-panel">
+    {% if song_request.status == "completed" %}
+      {% with asset=song_request.assets.last %}
+        {% if asset %}
+          <audio controls src="/media/{{ asset.storage_key }}"></audio>
+          <a class="button secondary" href="/media/{{ asset.storage_key }}" download>Download MP3</a>
+        {% endif %}
+      {% endwith %}
+      <form method="post" action="{% url 'songs:share' song_request.pk song_request.access_token %}">
+        {% csrf_token %}
+        <button class="button primary" type="submit">Create Share Link</button>
+      </form>
+    {% elif song_request.status == "failed" %}
+      <p>Something went sideways while making this song. We refunded your credit so you can try again.</p>
+      <form method="post" action="{% url 'songs:generate' song_request.pk song_request.access_token %}">
+        {% csrf_token %}
+        <label class="checkbox-row">
+          <input type="checkbox" name="terms" required>
+          I confirm this request is playful, original, and does not ask for artist imitation.
+        </label>
+        <button class="button primary" type="submit">Try Again</button>
+      </form>
+    {% elif balance > 0 %}
+      <p>Spend 1 credit to generate this custom 15-second song.</p>
+      <form method="post" action="{% url 'songs:generate' song_request.pk song_request.access_token %}">
+        {% csrf_token %}
+        <label class="checkbox-row">
+          <input type="checkbox" name="terms" required>
+          I confirm this request is playful, original, and does not ask for artist imitation.
+        </label>
+        <button class="button primary" type="submit">Generate My Song</button>
+      </form>
+    {% else %}
+      <p>You need 1 credit to generate this song.</p>
+      <a class="button primary" href="{% url 'web:home' %}#pricing">Buy Credits</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

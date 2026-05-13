@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Tiny Anthems - Custom 15-second songs{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">1 credit = 1 custom song</p>
+    <h1>Make them a tiny song they’ll never forget.</h1>
+    <p>Create a custom 15-second song for birthdays, wins, roasts, and group-chat moments worth celebrating.</p>
+    <div class="hero-actions">
+      <a class="button primary" href="{% url 'songs:create' %}">Make a Song</a>
+      <a class="button secondary" href="#examples">Hear Examples</a>
+    </div>
+  </div>
+  <div class="hero-preview" aria-label="Example song preview">
+    <span class="pill">Pop Anthem</span>
+    <h2>Sarah’s Birthday Banger</h2>
+    <p>“Sarah brings the tacos and the chaos in style...”</p>
+    <div class="waveform"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <button class="play-button" type="button">Play 0:15</button>
+  </div>
+</section>
+
+<section id="examples" class="section">
+  <div class="section-heading">
+    <p class="eyebrow">Real examples before beta</p>
+    <h2>Proof you can hear.</h2>
+  </div>
+  <div class="example-grid">
+    {% for example in examples %}
+      <article class="song-card">
+        <div class="card-topline">
+          <span>{{ example.occasion }}</span>
+          <span>{{ example.duration }}</span>
+        </div>
+        <h3>{{ example.title }}</h3>
+        <p>{{ example.snippet }}</p>
+        <div class="mini-player">
+          <button type="button">Play</button>
+          <div class="mini-wave"></div>
+        </div>
+        <small>{{ example.vibe }}</small>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section band">
+  <div class="section-heading">
+    <p class="eyebrow">How it works</p>
+    <h2>Three steps, one tiny anthem.</h2>
+  </div>
+  <div class="steps">
+    <article><strong>1</strong><h3>Describe the person</h3><p>Add names, inside jokes, habits, and what makes the moment matter.</p></article>
+    <article><strong>2</strong><h3>Pick the vibe</h3><p>Choose pop, funk, country, acoustic, or club energy with a tone that fits.</p></article>
+    <article><strong>3</strong><h3>Get the song</h3><p>Spend 1 credit and receive a 15-second MP3 ready to text, post, or play.</p></article>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-heading">
+    <p class="eyebrow">Occasions</p>
+    <h2>Made for the moments people actually share.</h2>
+  </div>
+  <div class="occasion-grid">
+    <span>Birthday</span>
+    <span>Congratulations</span>
+    <span>Graduation</span>
+    <span>Promotion</span>
+    <span>Roast</span>
+  </div>
+</section>
+
+<section id="pricing" class="section pricing">
+  <div class="section-heading">
+    <p class="eyebrow">Beta credits</p>
+    <h2>Buy 1-5 credits. Make songs when inspiration hits.</h2>
+    <p>1 credit = 1 custom song. Base credit price is $1 with small beta bundle discounts.</p>
+  </div>
+  <div class="price-grid">
+    {% for pack in packs %}
+      <form class="price-card" method="post" action="{% url 'billing:checkout' %}">
+        {% csrf_token %}
+        <input type="hidden" name="pack" value="{{ pack.slug }}">
+        <h3>{{ pack.credits_included }} Credit{% if pack.credits_included != 1 %}s{% endif %}</h3>
+        <p class="price">${{ pack.price_dollars|floatformat:2 }}</p>
+        {% if request.user.is_authenticated %}
+          <p class="form-note">Credits will be added to {{ request.user.email }}.</p>
+        {% else %}
+          <label>Email for credits and song access<input type="email" name="email" required placeholder="you@example.com"></label>
+        {% endif %}
+        <button class="button primary" type="submit">Buy Credits</button>
+      </form>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section faq">
+  <div class="section-heading">
+    <p class="eyebrow">FAQ</p>
+    <h2>The practical stuff.</h2>
+  </div>
+  <details open><summary>How long is each song?</summary><p>The beta target is 15 seconds, delivered as a downloadable audio file.</p></details>
+  <details><summary>What does a credit include?</summary><p>One credit generates one custom song. Provider or system failures automatically refund the credit.</p></details>
+  <details><summary>Are songs public?</summary><p>No. Songs are private by default. You can create an unlisted share link when you want one.</p></details>
+  <details><summary>Can I ask for a famous artist style?</summary><p>No. Describe the vibe instead, like bright pop, acoustic sweet, or funky groove.</p></details>
+</section>
+
+<section class="final-cta">
+  <h2>Ready to turn the inside joke into the hook?</h2>
+  <a class="button primary" href="{% url 'songs:create' %}">Make a Song</a>
+</section>
+{% endblock %}

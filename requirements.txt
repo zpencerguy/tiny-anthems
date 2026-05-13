@@ -1,0 +1,4 @@
+Django>=5.2,<5.3
+stripe>=12.0,<13.0
+pytest>=8.0,<9.0
+pytest-django>=4.9,<5.0
