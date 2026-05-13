@@ -1,4 +1,6 @@
-from django.test import TestCase
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
 
 from apps.generation.models import GenerationJobStatus
 from apps.generation.services import start_generation
@@ -68,6 +70,25 @@ class CreditLedgerTests(TestCase):
         job = start_generation(song)
         self.assertEqual(job.provider, "mock")
         self.assertEqual(job.status, GenerationJobStatus.COMPLETED)
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    def test_generation_queues_job_when_celery_not_eager(self):
+        grant_credits_for_purchase(self.purchase, source_id="cs_test_123")
+        song = SongRequest.objects.create(
+            email=self.email,
+            occasion="birthday",
+            recipient_name="Sam",
+            relationship="friend",
+            personal_details="Sam loves tacos, board games, and arriving fashionably late.",
+            vibe="pop_anthem",
+            tone="funny",
+        )
+        with patch("apps.generation.tasks.generate_song_task.delay") as delay:
+            job = start_generation(song, provider_name="mock")
+
+        delay.assert_called_once_with(job.id)
+        self.assertEqual(job.status, GenerationJobStatus.QUEUED)
+        self.assertEqual(get_credit_balance(self.email), 0)
 
     def test_failed_provider_refunds_credit(self):
         grant_credits_for_purchase(self.purchase, source_id="cs_test_123")

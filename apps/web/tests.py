@@ -116,6 +116,38 @@ class HomePageTests(TestCase):
         self.assertNotContains(response, "private@example.com")
         self.assertNotContains(response, "internal prompt should not leak")
 
+    def test_song_status_endpoint_returns_current_generation_state(self):
+        song = SongRequest.objects.create(
+            email="status@example.com",
+            status=SongRequestStatus.QUEUED,
+            occasion="promotion",
+            recipient_name="Jess",
+            relationship="coworker",
+            personal_details="Jess got promoted after rescuing every Friday deadline.",
+            vibe="pop_anthem",
+            tone="party_energy",
+        )
+        response = self.client.get(reverse("songs:status", args=[song.pk, song.access_token]))
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["song_status"], "queued")
+        self.assertEqual(payload["song_status_label"], "Queued")
+
+    def test_song_detail_shows_generation_progress_for_queued_song(self):
+        song = SongRequest.objects.create(
+            email="status@example.com",
+            status=SongRequestStatus.QUEUED,
+            occasion="promotion",
+            recipient_name="Jess",
+            relationship="coworker",
+            personal_details="Jess got promoted after rescuing every Friday deadline.",
+            vibe="pop_anthem",
+            tone="party_energy",
+        )
+        response = self.client.get(reverse("songs:detail", args=[song.pk, song.access_token]))
+        self.assertContains(response, "Your tiny anthem is in the mix.")
+        self.assertContains(response, reverse("songs:status", args=[song.pk, song.access_token]))
+
     def test_checkout_requires_email(self):
         pack = ensure_beta_credit_packs()[0]
         response = self.client.post(reverse("billing:checkout"), {"pack": pack.slug})

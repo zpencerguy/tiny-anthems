@@ -15,6 +15,20 @@ python manage.py runserver
 
 For local testing, SQLite is used by default. Configure Stripe price IDs and webhooks with the variables in `.env.example` before running checkout against Stripe test mode.
 
+## Background Jobs
+
+Generation is queued through Celery. Local development defaults to eager execution so a separate worker is not required:
+
+```bash
+CELERY_TASK_ALWAYS_EAGER=true
+```
+
+For production-like async behavior, run Redis and set `CELERY_TASK_ALWAYS_EAGER=false`, then start a worker:
+
+```bash
+celery -A config worker -l info
+```
+
 ## Music Generation
 
 Local development defaults to the mock provider when `DEBUG=true` and `DEFAULT_MUSIC_PROVIDER` is unset. To call ElevenLabs in a beta/staging environment, set:

@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -47,6 +47,25 @@ def song_detail(request, pk, token):
     )
 
 
+def song_status(request, pk, token):
+    song_request = _get_owned_song(pk, token)
+    latest_job = song_request.generation_jobs.order_by("-created_at").first()
+    latest_asset = song_request.assets.order_by("-created_at").first()
+    asset_url = ""
+    if latest_asset:
+        asset_url = latest_asset.public_url or f"/media/{latest_asset.storage_key}"
+    return JsonResponse(
+        {
+            "song_status": song_request.status,
+            "song_status_label": song_request.get_status_display(),
+            "job_status": latest_job.status if latest_job else None,
+            "job_status_label": latest_job.get_status_display() if latest_job else None,
+            "error_message": latest_job.error_message if latest_job else "",
+            "asset_url": asset_url,
+        }
+    )
+
+
 @require_POST
 def generate_song(request, pk, token):
     song_request = _get_owned_song(pk, token)
@@ -60,11 +79,13 @@ def generate_song(request, pk, token):
         job = start_generation(song_request)
         if job.status == "completed":
             messages.success(request, "Your tiny anthem is ready.")
-        else:
+        elif job.status == "refunded":
             messages.error(
                 request,
                 "Generation failed, so we refunded your credit. Check provider settings or try again.",
             )
+        else:
+            messages.info(request, "Your tiny anthem is queued. This page will update as it mixes.")
     except ValueError:
         song_request.status = SongRequestStatus.AWAITING_PAYMENT
         song_request.save(update_fields=["status", "updated_at"])

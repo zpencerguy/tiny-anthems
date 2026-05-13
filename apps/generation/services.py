@@ -71,10 +71,24 @@ def start_generation(song_request, provider_name=None):
     song_request.moderation_status = ModerationStatus.APPROVED
     song_request.prompt_used = job.prompt
     song_request.save(update_fields=["status", "moderation_status", "prompt_used", "updated_at"])
-    return run_generation_job(job)
+    from .tasks import generate_song_task
+
+    if settings.CELERY_TASK_ALWAYS_EAGER:
+        generate_song_task.apply(args=(job.id,))
+        job.refresh_from_db()
+    else:
+        generate_song_task.delay(job.id)
+    return job
 
 
-def run_generation_job(job):
+def run_generation_job(job_or_id):
+    job = (
+        GenerationJob.objects.select_related("song_request").get(id=job_or_id)
+        if isinstance(job_or_id, int)
+        else job_or_id
+    )
+    if job.status in {GenerationJobStatus.COMPLETED, GenerationJobStatus.REFUNDED}:
+        return job
     job.status = GenerationJobStatus.RUNNING
     job.started_at = timezone.now()
     job.save(update_fields=["status", "started_at", "updated_at"])

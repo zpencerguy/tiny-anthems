@@ -13,7 +13,7 @@
       <div><dt>Credits</dt><dd>{{ balance }}</dd></div>
     </dl>
   </div>
-  <div class="action-panel">
+  <div class="action-panel" data-song-status="{{ song_request.status }}" data-status-url="{% url 'songs:status' song_request.pk song_request.access_token %}">
     {% if song_request.status == "completed" %}
       {% with asset=song_request.assets.last %}
         {% if asset %}
@@ -25,6 +25,13 @@
         {% csrf_token %}
         <button class="button primary" type="submit">Create Share Link</button>
       </form>
+    {% elif song_request.status == "queued" or song_request.status == "generating" %}
+      <div class="generation-progress">
+        <p class="eyebrow" data-status-label>{{ song_request.get_status_display }}</p>
+        <h2>Your tiny anthem is in the mix.</h2>
+        <p data-status-message>Writing the hook, recording the vibe, and mixing it down.</p>
+        <div class="progress-bars" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
     {% elif song_request.status == "failed" %}
       <p>Something went sideways while making this song. We refunded your credit so you can try again.</p>
       <form method="post" action="{% url 'songs:generate' song_request.pk song_request.access_token %}">
@@ -51,4 +58,30 @@
     {% endif %}
   </div>
 </section>
+{% if song_request.status == "queued" or song_request.status == "generating" %}
+<script>
+  (() => {
+    const panel = document.querySelector("[data-status-url]");
+    const label = document.querySelector("[data-status-label]");
+    const message = document.querySelector("[data-status-message]");
+    if (!panel) return;
+
+    const poll = async () => {
+      const response = await fetch(panel.dataset.statusUrl, {headers: {"Accept": "application/json"}});
+      if (!response.ok) return;
+      const data = await response.json();
+      if (label) label.textContent = data.job_status_label || data.song_status_label;
+      if (message && data.song_status === "generating") {
+        message.textContent = "Recording the vibe and mixing it down.";
+      }
+      if (["completed", "failed", "canceled"].includes(data.song_status)) {
+        window.location.reload();
+      }
+    };
+
+    window.setInterval(poll, 2500);
+    poll();
+  })();
+</script>
+{% endif %}
 {% endblock %}
