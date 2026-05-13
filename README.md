@@ -15,6 +15,43 @@ python manage.py runserver
 
 For local testing, SQLite is used by default. Configure Stripe price IDs and webhooks with the variables in `.env.example` before running checkout against Stripe test mode.
 
+## Docker Compose Setup
+
+Start the app stack:
+
+```bash
+docker compose up --build
+```
+
+The app runs at `http://localhost:8000` with:
+
+- Django web server
+- Celery worker
+- Postgres
+- Redis
+
+By default, Docker uses `.env.docker.example` and `DEFAULT_MUSIC_PROVIDER=mock` so you can test the async pipeline without spending API credits. For local secrets or overrides, copy the template:
+
+```bash
+cp .env.docker.example .env.docker
+```
+
+To test real ElevenLabs generation, edit `.env.docker`:
+
+```bash
+DEFAULT_MUSIC_PROVIDER=elevenlabs
+ELEVENLABS_API_KEY=replace-with-real-key
+CELERY_TASK_ALWAYS_EAGER=false
+```
+
+Then restart:
+
+```bash
+docker compose --env-file .env.docker up --build
+```
+
+Never commit `.env.docker`; it is ignored by Git.
+
 ## Background Jobs
 
 Generation is queued through Celery. Local development defaults to eager execution so a separate worker is not required:
