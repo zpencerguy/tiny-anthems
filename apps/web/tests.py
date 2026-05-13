@@ -39,6 +39,36 @@ class HomePageTests(TestCase):
             fetch_redirect_response=False,
         )
 
+    def test_song_request_normalizes_user_text_before_save(self):
+        self.client.post(
+            reverse("songs:create"),
+            {
+                "email": "  Sender@Example.com ",
+                "occasion": "birthday",
+                "recipient_name": "  Maya\x00   June  ",
+                "recipient_nickname": "  MJ\t",
+                "milestone": "  30th\n birthday ",
+                "relationship": "friend",
+                "personal_details": (
+                    "  Maya\x00 loves   hiking,\n\n\n breakfast tacos, "
+                    "and sending\tperfect reaction gifs.  "
+                ),
+                "things_to_avoid": "  mean jokes\x07\n\n\n spoilers  ",
+                "family_friendly": "on",
+                "vibe": "funky_groove",
+                "tone": "funny",
+            },
+        )
+        song = SongRequest.objects.get(email="sender@example.com")
+        self.assertEqual(song.recipient_name, "Maya June")
+        self.assertEqual(song.recipient_nickname, "MJ")
+        self.assertEqual(song.milestone, "30th birthday")
+        self.assertEqual(
+            song.personal_details,
+            "Maya loves hiking,\n\nbreakfast tacos, and sending perfect reaction gifs.",
+        )
+        self.assertEqual(song.things_to_avoid, "mean jokes\n\nspoilers")
+
     def test_signed_in_song_request_uses_account_email(self):
         self.client.post(reverse("accounts:login"), {"email": "account@example.com"})
         response = self.client.post(
