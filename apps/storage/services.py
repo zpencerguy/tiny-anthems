@@ -1,4 +1,5 @@
 from datetime import timedelta
+import json
 from pathlib import Path
 
 from django.conf import settings
@@ -66,8 +67,14 @@ class GCSStorageBackend:
         if not settings.GCS_BUCKET_NAME:
             raise StorageConfigurationError("GCS_BUCKET_NAME is required when STORAGE_BACKEND=gcs.")
         from google.cloud import storage
+        from google.oauth2 import service_account
 
-        self.client = storage.Client(project=settings.GCS_PROJECT_ID or None)
+        credentials = None
+        if settings.GCS_SERVICE_ACCOUNT_JSON:
+            credentials = service_account.Credentials.from_service_account_info(
+                json.loads(settings.GCS_SERVICE_ACCOUNT_JSON)
+            )
+        self.client = storage.Client(project=settings.GCS_PROJECT_ID or None, credentials=credentials)
         self.bucket = self.client.bucket(settings.GCS_BUCKET_NAME)
 
     def upload_bytes(self, storage_key, content, content_type):

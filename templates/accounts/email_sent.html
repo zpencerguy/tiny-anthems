@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Check Your Email - Tiny Anthems{% endblock %}
+{% block content %}
+<section class="login-shell">
+  <div class="login-copy">
+    <p class="eyebrow">Sign-in link sent</p>
+    <h1>Check your email.</h1>
+    {% if email %}
+      <p>We sent a private sign-in link to {{ email }}. It expires soon and can only be used once.</p>
+    {% else %}
+      <p>We sent a private sign-in link. It expires soon and can only be used once.</p>
+    {% endif %}
+  </div>
+  <div class="login-panel">
+    <p class="login-note">In local Docker, email is printed in the web logs.</p>
+    <a class="button secondary" href="{% url 'accounts:login' %}">Use a Different Email</a>
+  </div>
+</section>
+{% endblock %}

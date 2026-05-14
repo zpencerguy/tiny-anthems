@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render
 
 from apps.billing.services import ensure_beta_credit_packs
@@ -38,3 +39,7 @@ EXAMPLES = [
 def home(request):
     packs = ensure_beta_credit_packs()
     return render(request, "web/home.html", {"examples": EXAMPLES, "packs": packs})
+
+
+def health(request):
+    return JsonResponse({"ok": True})

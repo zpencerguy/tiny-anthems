@@ -6,6 +6,7 @@ __pycache__
 db.sqlite3
 *.sqlite3
 media
+staticfiles
 exported-songs
 secrets
 .env

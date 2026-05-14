@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.auth import get_user_model
 
 from apps.billing.services import ensure_beta_credit_packs
 from apps.billing.services import get_credit_balance
@@ -74,7 +75,11 @@ class HomePageTests(TestCase):
         self.assertEqual(song.things_to_avoid, "mean jokes\n\nspoilers")
 
     def test_signed_in_song_request_uses_account_email(self):
-        self.client.post(reverse("accounts:login"), {"email": "account@example.com"})
+        user = get_user_model().objects.create_user(
+            username="account@example.com",
+            email="account@example.com",
+        )
+        self.client.force_login(user)
         response = self.client.post(
             reverse("songs:create"),
             {

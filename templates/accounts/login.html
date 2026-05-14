@@ -8,8 +8,12 @@
     <p>Use one email for credits, song requests, downloads, and private song links.</p>
   </div>
   <div class="login-panel">
-    <a class="button google disabled" href="{% url 'accounts:google' %}" aria-disabled="true">Continue with Google</a>
-    <p class="login-note">Google sign-in is ready for OAuth setup once credentials are configured.</p>
+    {% if google_enabled %}
+      <a class="button google" href="{{ google_login_url }}">Continue with Google</a>
+    {% else %}
+      <a class="button google disabled" href="{% url 'accounts:google' %}" aria-disabled="true">Continue with Google</a>
+      <p class="login-note">Google sign-in is ready for OAuth setup once credentials are configured.</p>
+    {% endif %}
     <div class="divider"><span>or</span></div>
     <form method="post" class="song-form compact-form">
       {% csrf_token %}
@@ -23,7 +27,7 @@
       {% for field in form %}
         <label>{{ field.label }}{{ field }}</label>
       {% endfor %}
-      <button class="button primary" type="submit">Continue with Email</button>
+      <button class="button primary" type="submit">Send Sign-In Link</button>
     </form>
   </div>
 </section>
