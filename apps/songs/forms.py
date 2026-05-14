@@ -21,6 +21,11 @@ class NormalizedTextField(forms.CharField):
 
 class SongRequestForm(forms.ModelForm):
     email = NormalizedEmailField()
+    generated_title = NormalizedCharField(
+        required=False,
+        label="Song title",
+        help_text="Optional. This is used on the song page and as the download filename.",
+    )
     recipient_name = NormalizedCharField()
     recipient_nickname = NormalizedCharField(required=False)
     milestone = NormalizedCharField(required=False)
@@ -31,6 +36,7 @@ class SongRequestForm(forms.ModelForm):
         model = SongRequest
         fields = [
             "email",
+            "generated_title",
             "occasion",
             "recipient_name",
             "recipient_nickname",
@@ -45,6 +51,12 @@ class SongRequestForm(forms.ModelForm):
 
     def clean_email(self):
         return normalize_single_line(self.cleaned_data["email"]).lower()
+
+    def clean_generated_title(self):
+        title = normalize_single_line(self.cleaned_data["generated_title"])
+        if len(title) > 120:
+            raise forms.ValidationError("Keep the song title under 120 characters.")
+        return title
 
     def clean_recipient_name(self):
         return normalize_single_line(self.cleaned_data["recipient_name"])

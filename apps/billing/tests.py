@@ -36,6 +36,7 @@ class CreditLedgerTests(TestCase):
         self.assertEqual(get_credit_balance(self.email), 1)
         self.assertEqual(CreditLedgerEntry.objects.count(), 1)
 
+    @override_settings(ALLOW_MOCK_MUSIC_PROVIDER=True)
     def test_generation_spends_one_credit(self):
         grant_credits_for_purchase(self.purchase, source_id="cs_test_123")
         song = SongRequest.objects.create(
@@ -56,7 +57,7 @@ class CreditLedgerTests(TestCase):
         song.refresh_from_db()
         self.assertEqual(song.status, SongRequestStatus.COMPLETED)
 
-    def test_default_local_generation_uses_mock_provider(self):
+    def test_default_generation_uses_elevenlabs_and_refunds_without_key(self):
         grant_credits_for_purchase(self.purchase, source_id="cs_test_123")
         song = SongRequest.objects.create(
             email=self.email,
@@ -68,10 +69,12 @@ class CreditLedgerTests(TestCase):
             tone="funny",
         )
         job = start_generation(song)
-        self.assertEqual(job.provider, "mock")
-        self.assertEqual(job.status, GenerationJobStatus.COMPLETED)
+        self.assertEqual(job.provider, "elevenlabs")
+        self.assertEqual(job.status, GenerationJobStatus.REFUNDED)
+        self.assertEqual(job.error_code, "missing_api_key")
+        self.assertEqual(get_credit_balance(self.email), 1)
 
-    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False, ALLOW_MOCK_MUSIC_PROVIDER=True)
     def test_generation_queues_job_when_celery_not_eager(self):
         grant_credits_for_purchase(self.purchase, source_id="cs_test_123")
         song = SongRequest.objects.create(

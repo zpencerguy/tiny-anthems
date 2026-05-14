@@ -1,19 +1,28 @@
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.utils.text import slugify
 from django.utils import timezone
 
+from apps.audio.services import validate_audio_duration
 from apps.billing.services import refund_credit, spend_credit
 from apps.songs.models import ModerationStatus, SongRequestStatus
 from apps.songs.sanitization import normalize_single_line, quote_for_prompt
 from apps.storage.models import SongAsset
+from apps.storage.services import build_song_storage_key, upload_bytes
 
 from .models import GenerationJob, GenerationJobStatus
-from .providers import ElevenLabsMusicProvider, MockMusicProvider, MusicGenerationRequest
+from .providers import (
+    ElevenLabsMusicProvider,
+    MockMusicProvider,
+    MusicGenerationRequest,
+    MusicProviderError,
+)
 
 
 def build_music_prompt(song_request):
     vibe = song_request.get_vibe_display()
     tone = song_request.get_tone_display()
+    title = normalize_single_line(song_request.generated_title)
     recipient_name = normalize_single_line(song_request.recipient_name)
     recipient_nickname = normalize_single_line(song_request.recipient_nickname)
     milestone = normalize_single_line(song_request.milestone)
@@ -24,6 +33,7 @@ def build_music_prompt(song_request):
     )
     prompt = f"""Create a {song_request.requested_duration_seconds}-second personalized {vibe} mini-song.
 
+Title: {title or "Tiny Anthem"}.
 Recipient: {recipient_name}.
 Nickname: {recipient_nickname or "none"}.
 Occasion: {song_request.get_occasion_display()} {milestone}.
@@ -45,6 +55,11 @@ The song should feel like a catchy tiny anthem, not a full song. Include the rec
 def get_provider(name=None):
     provider_name = name or settings.DEFAULT_MUSIC_PROVIDER
     if provider_name == "mock":
+        if not settings.ALLOW_MOCK_MUSIC_PROVIDER:
+            raise MusicProviderError(
+                "Mock music provider is disabled. Configure ElevenLabs for beta generation.",
+                error_code="mock_provider_disabled",
+            )
         return MockMusicProvider()
     if provider_name == "elevenlabs":
         return ElevenLabsMusicProvider(
@@ -54,7 +69,19 @@ def get_provider(name=None):
             timeout_seconds=settings.ELEVENLABS_TIMEOUT_SECONDS,
             use_composition_plan=settings.ELEVENLABS_USE_COMPOSITION_PLAN,
         )
-    return MockMusicProvider()
+    raise MusicProviderError(
+        f"Unknown music provider configured: {provider_name}",
+        error_code="unknown_provider",
+    )
+
+
+def build_song_filename_stem(song_request):
+    title_slug = slugify(normalize_single_line(song_request.generated_title))
+    if title_slug:
+        return title_slug[:80].strip("-")
+    recipient_slug = slugify(normalize_single_line(song_request.recipient_name))
+    occasion_slug = slugify(song_request.get_occasion_display())
+    return f"{recipient_slug or 'tiny'}-{occasion_slug or 'anthem'}-anthem"[:80].strip("-")
 
 
 def start_generation(song_request, provider_name=None):
@@ -107,14 +134,29 @@ def run_generation_job(job_or_id):
                 family_friendly=song.family_friendly,
             )
         )
+        actual_duration = validate_audio_duration(
+            result.audio_bytes,
+            result.mime_type,
+            song.requested_duration_seconds,
+        )
         extension = "mp3" if result.mime_type == "audio/mpeg" else "wav"
-        filename = f"song-{song.id}-job-{job.id}.{extension}"
-        job.raw_audio_file.save(filename, ContentFile(result.audio_bytes), save=False)
-        job.processed_audio_file.save(filename, ContentFile(result.audio_bytes), save=False)
+        final_storage_key = build_song_storage_key(
+            song.id,
+            job.id,
+            "final",
+            extension,
+            filename_stem=build_song_filename_stem(song),
+        )
+        final_upload = upload_bytes(final_storage_key, ContentFile(result.audio_bytes), result.mime_type)
+        job.raw_audio_file.name = final_upload["storage_key"]
+        job.processed_audio_file.name = final_upload["storage_key"]
         job.provider_request_id = result.provider_request_id
-        job.provider_response_metadata = result.metadata
+        job.provider_response_metadata = {
+            **result.metadata,
+            "validated_duration_seconds": actual_duration,
+        }
         job.provider_cost_units = result.cost_units
-        job.duration_seconds = result.duration_seconds or song.requested_duration_seconds
+        job.duration_seconds = actual_duration
         job.status = GenerationJobStatus.COMPLETED
         job.completed_at = timezone.now()
         job.save()
@@ -122,10 +164,16 @@ def run_generation_job(job_or_id):
             song_request=song,
             generation_job=job,
             asset_type="final_mp3",
-            storage_key=job.processed_audio_file.name,
+            storage_key=final_upload["storage_key"],
+            public_url=final_upload["public_url"],
             mime_type=result.mime_type,
+            file_size_bytes=final_upload["file_size_bytes"],
             duration_seconds=job.duration_seconds,
-            metadata={"provider": job.provider},
+            metadata={
+                "provider": job.provider,
+                "source": "provider_output",
+                "storage_backend": final_upload["storage_backend"],
+            },
         )
         song.status = SongRequestStatus.COMPLETED
         song.save(update_fields=["status", "updated_at"])

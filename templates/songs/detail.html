@@ -15,10 +15,10 @@
   </div>
   <div class="action-panel" data-song-status="{{ song_request.status }}" data-status-url="{% url 'songs:status' song_request.pk song_request.access_token %}">
     {% if song_request.status == "completed" %}
-      {% with asset=song_request.assets.last %}
+      {% with asset=final_asset %}
         {% if asset %}
-          <audio controls src="/media/{{ asset.storage_key }}"></audio>
-          <a class="button secondary" href="/media/{{ asset.storage_key }}" download>Download MP3</a>
+          <audio controls src="{% url 'storage:download' asset.id song_request.access_token %}"></audio>
+          <a class="button secondary" href="{% url 'storage:download' asset.id song_request.access_token %}" download>Download Song</a>
         {% endif %}
       {% endwith %}
       <form method="post" action="{% url 'songs:share' song_request.pk song_request.access_token %}">

@@ -4,8 +4,8 @@
 <section class="share-page">
   <p class="eyebrow">{{ share_link.song_request.get_occasion_display }}</p>
   <h1>{{ share_link.song_request.generated_title }}</h1>
-  {% with asset=share_link.song_request.assets.last %}
-    {% if asset %}<audio controls src="/media/{{ asset.storage_key }}"></audio>{% endif %}
+  {% with asset=final_asset %}
+    {% if asset %}<audio controls src="{% url 'storage:download' asset.id share_link.token %}"></audio>{% endif %}
   {% endwith %}
   <p>Made with Tiny Anthems.</p>
   <a class="button primary" href="{% url 'songs:create' %}">Make Your Own</a>

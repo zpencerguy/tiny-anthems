@@ -1,0 +1,8 @@
+services:
+  web:
+    volumes:
+      - ./secrets/gcp-service-account.json:/run/secrets/gcp-service-account.json:ro
+
+  worker:
+    volumes:
+      - ./secrets/gcp-service-account.json:/run/secrets/gcp-service-account.json:ro

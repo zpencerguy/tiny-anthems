@@ -1,4 +1,6 @@
 from unittest.mock import Mock, patch
+from io import BytesIO
+import wave
 
 from django.test import TestCase, override_settings
 
@@ -7,7 +9,13 @@ from apps.billing.services import ensure_beta_credit_packs, get_credit_balance, 
 from apps.songs.models import SongRequest, SongRequestStatus
 
 from .models import GenerationJobStatus
-from .providers import ElevenLabsMusicProvider, MusicGenerationRequest, MusicProviderError
+from .providers import (
+    ElevenLabsMusicProvider,
+    MockMusicProvider,
+    MusicGenerationRequest,
+    MusicGenerationResult,
+    MusicProviderError,
+)
 from .services import build_music_prompt, start_generation
 
 
@@ -108,6 +116,25 @@ class ElevenLabsProviderTests(TestCase):
         self.assertEqual(post.call_args_list[1].kwargs["json"]["composition_plan"], plan)
 
 
+class MockProviderTests(TestCase):
+    def test_mock_provider_returns_playable_wav_audio(self):
+        result = MockMusicProvider().generate(
+            MusicGenerationRequest(
+                prompt="Create a tiny test song.",
+                duration_seconds=15,
+                vibe="pop_anthem",
+                tone="funny",
+            )
+        )
+
+        self.assertEqual(result.mime_type, "audio/wav")
+        with wave.open(BytesIO(result.audio_bytes), "rb") as wav:
+            self.assertEqual(wav.getnchannels(), 1)
+            self.assertGreater(wav.getnframes(), 0)
+            self.assertGreater(wav.getframerate(), 0)
+            self.assertAlmostEqual(wav.getnframes() / wav.getframerate(), 15, places=1)
+
+
 class ElevenLabsGenerationServiceTests(TestCase):
     def setUp(self):
         self.email = "buyer@example.com"
@@ -120,6 +147,7 @@ class ElevenLabsGenerationServiceTests(TestCase):
         grant_credits_for_purchase(purchase, source_id="cs_generation")
         self.song = SongRequest.objects.create(
             email=self.email,
+            generated_title="Maya's Big Birthday Anthem!",
             occasion="birthday",
             recipient_name="Maya",
             relationship="friend",
@@ -136,7 +164,10 @@ class ElevenLabsGenerationServiceTests(TestCase):
         ELEVENLABS_USE_COMPOSITION_PLAN=False,
     )
     def test_generation_service_stores_elevenlabs_audio_and_metadata(self):
-        with patch("apps.generation.providers.requests.post") as post:
+        with (
+            patch("apps.generation.providers.requests.post") as post,
+            patch("apps.generation.services.validate_audio_duration", return_value=15),
+        ):
             post.return_value = Mock(
                 status_code=200,
                 content=b"mp3-bytes",
@@ -149,7 +180,14 @@ class ElevenLabsGenerationServiceTests(TestCase):
         self.assertEqual(job.status, GenerationJobStatus.COMPLETED)
         self.assertEqual(job.provider_request_id, "song_789")
         self.assertEqual(job.provider_response_metadata["output_format"], "mp3_44100_128")
+        self.assertEqual(job.provider_response_metadata["validated_duration_seconds"], 15)
+        self.assertIn("mayas-big-birthday-anthem", job.processed_audio_file.name)
         self.assertTrue(job.processed_audio_file.name.endswith(".mp3"))
+        final_asset = self.song.assets.get(asset_type="final_mp3")
+        self.assertEqual(final_asset.metadata["storage_backend"], "filesystem")
+        self.assertEqual(final_asset.metadata["source"], "provider_output")
+        self.assertEqual(final_asset.storage_key, job.processed_audio_file.name)
+        self.assertEqual(job.raw_audio_file.name, job.processed_audio_file.name)
         self.song.refresh_from_db()
         self.assertEqual(self.song.status, SongRequestStatus.COMPLETED)
         self.assertEqual(get_credit_balance(self.email), 0)
@@ -179,6 +217,30 @@ class ElevenLabsGenerationServiceTests(TestCase):
         self.assertEqual(job.provider_response_metadata["status_code"], 422)
         self.assertEqual(get_credit_balance(self.email), 1)
         self.assertEqual(CreditLedgerEntry.objects.filter(entry_type="refund").count(), 1)
+
+    def test_generation_service_refunds_credit_when_audio_is_too_short(self):
+        class ShortAudioProvider:
+            name = "short"
+
+            def generate(self, request):
+                audio_bytes = MockMusicProvider()._build_tone_wav(duration_seconds=3)
+                return MusicGenerationResult(
+                    audio_bytes=audio_bytes,
+                    mime_type="audio/wav",
+                    provider_request_id="short-audio",
+                    duration_seconds=3,
+                    metadata={"mock": True},
+                    cost_units=0,
+                )
+
+        with patch("apps.generation.services.get_provider", return_value=ShortAudioProvider()):
+            job = start_generation(self.song, provider_name="short")
+
+        self.assertEqual(job.status, GenerationJobStatus.REFUNDED)
+        self.assertEqual(job.error_code, "audio_too_short")
+        self.assertIn("too short", job.error_message)
+        self.assertEqual(get_credit_balance(self.email), 1)
+        self.assertFalse(self.song.assets.exists())
 
 
 class PromptSanitizationTests(TestCase):

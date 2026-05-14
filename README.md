@@ -30,13 +30,13 @@ The app runs at `http://localhost:8000` with:
 - Postgres
 - Redis
 
-By default, Docker uses `.env.docker.example` and `DEFAULT_MUSIC_PROVIDER=mock` so you can test the async pipeline without spending API credits. For local secrets or overrides, copy the template:
+By default, Docker is configured for the real ElevenLabs provider. Copy the template and add local secrets:
 
 ```bash
 cp .env.docker.example .env.docker
 ```
 
-To test real ElevenLabs generation, edit `.env.docker`:
+Edit `.env.docker`:
 
 ```bash
 DEFAULT_MUSIC_PROVIDER=elevenlabs
@@ -51,6 +51,26 @@ docker compose --env-file .env.docker up --build
 ```
 
 Never commit `.env.docker`; it is ignored by Git.
+
+### GCS Audio Storage
+
+Local development defaults to filesystem storage in `media/`. For beta/staging, use Google Cloud Storage so generated songs do not accumulate inside the app container:
+
+```bash
+STORAGE_BACKEND=gcs
+GCS_BUCKET_NAME=tiny-anthems-audio
+GCS_PROJECT_ID=your-gcp-project-id
+GCS_SIGNED_URL_TTL_SECONDS=900
+GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp-service-account.json
+```
+
+Keep the service account JSON outside Git at `secrets/gcp-service-account.json`, then start Docker Compose with the GCS override:
+
+```bash
+docker compose --env-file .env.docker -f docker-compose.yml -f docker-compose.gcs.yml up --build
+```
+
+The app stores private object keys in the database and serves downloads through short-lived signed URLs after validating the song or share token.
 
 ## Background Jobs
 
@@ -68,7 +88,7 @@ celery -A config worker -l info
 
 ## Music Generation
 
-Local development defaults to the mock provider when `DEBUG=true` and `DEFAULT_MUSIC_PROVIDER` is unset. To call ElevenLabs in a beta/staging environment, set:
+Tiny Anthems defaults to ElevenLabs for generation. To call ElevenLabs in a beta/staging environment, set:
 
 ```bash
 DEFAULT_MUSIC_PROVIDER=elevenlabs
@@ -80,3 +100,10 @@ ELEVENLABS_USE_COMPOSITION_PLAN=false
 ```
 
 `ELEVENLABS_USE_COMPOSITION_PLAN=true` will first call `/v1/music/plan`, then submit that plan to `/v1/music`. Leave it off for the simplest prompt-to-song path.
+
+There is still a mock provider for automated tests and local development only. It is disabled unless explicitly enabled:
+
+```bash
+ALLOW_MOCK_MUSIC_PROVIDER=true
+DEFAULT_MUSIC_PROVIDER=mock
+```

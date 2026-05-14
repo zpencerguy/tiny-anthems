@@ -20,6 +20,7 @@ class HomePageTests(TestCase):
             reverse("songs:create"),
             {
                 "email": "sender@example.com",
+                "generated_title": "Maya's Birthday Jam",
                 "occasion": "birthday",
                 "recipient_name": "Maya",
                 "recipient_nickname": "May",
@@ -33,6 +34,7 @@ class HomePageTests(TestCase):
             },
         )
         song = SongRequest.objects.get(email="sender@example.com")
+        self.assertEqual(song.generated_title, "Maya's Birthday Jam")
         self.assertRedirects(
             response,
             reverse("songs:detail", args=[song.pk, song.access_token]),
@@ -44,6 +46,7 @@ class HomePageTests(TestCase):
             reverse("songs:create"),
             {
                 "email": "  Sender@Example.com ",
+                "generated_title": "  Maya\x00  Birthday   Anthem  ",
                 "occasion": "birthday",
                 "recipient_name": "  Maya\x00   June  ",
                 "recipient_nickname": "  MJ\t",
@@ -60,6 +63,7 @@ class HomePageTests(TestCase):
             },
         )
         song = SongRequest.objects.get(email="sender@example.com")
+        self.assertEqual(song.generated_title, "Maya Birthday Anthem")
         self.assertEqual(song.recipient_name, "Maya June")
         self.assertEqual(song.recipient_nickname, "MJ")
         self.assertEqual(song.milestone, "30th birthday")
@@ -163,3 +167,13 @@ class HomePageTests(TestCase):
         success_response = self.client.get(response["Location"])
         self.assertEqual(success_response.status_code, 200)
         self.assertEqual(get_credit_balance("dev@example.com"), 2)
+
+    def test_placeholder_stripe_key_uses_dev_checkout(self):
+        pack = ensure_beta_credit_packs()[0]
+        with self.settings(STRIPE_SECRET_KEY="replace-with-stripe-secret-key"):
+            response = self.client.post(
+                reverse("billing:checkout"),
+                {"pack": pack.slug, "email": "placeholder@example.com"},
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("dev=1", response["Location"])

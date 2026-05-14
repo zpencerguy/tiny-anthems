@@ -1,7 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Protocol
-import base64
 import json
+import math
+import struct
+import wave
+from io import BytesIO
 
 import requests
 
@@ -48,17 +51,31 @@ class MockMusicProvider:
     name = "mock"
 
     def generate(self, request: MusicGenerationRequest) -> MusicGenerationResult:
-        wav_header = base64.b64decode(
-            "UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="
-        )
+        audio_bytes = self._build_tone_wav(duration_seconds=request.duration_seconds)
         return MusicGenerationResult(
-            audio_bytes=wav_header,
+            audio_bytes=audio_bytes,
             mime_type="audio/wav",
             provider_request_id="mock-local",
-            duration_seconds=0,
+            duration_seconds=request.duration_seconds,
             metadata={"mock": True},
             cost_units=0,
         )
+
+    def _build_tone_wav(self, duration_seconds):
+        sample_rate = 22050
+        amplitude = 0.25
+        frames = int(sample_rate * duration_seconds)
+        buffer = BytesIO()
+        with wave.open(buffer, "wb") as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(sample_rate)
+            for index in range(frames):
+                envelope = min(index / 800, 1, (frames - index) / 800)
+                frequency = 440 if index < frames / 2 else 554.37
+                sample = amplitude * envelope * math.sin(2 * math.pi * frequency * index / sample_rate)
+                wav.writeframes(struct.pack("<h", int(sample * 32767)))
+        return buffer.getvalue()
 
 
 class ElevenLabsMusicProvider:

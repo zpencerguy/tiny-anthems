@@ -3,6 +3,8 @@ import secrets
 from django.conf import settings
 from django.db import models
 
+from .sanitization import normalize_single_line
+
 
 class SongRequestStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
@@ -86,6 +88,7 @@ class SongRequest(models.Model):
         ordering = ("-created_at",)
 
     def save(self, *args, **kwargs):
+        self.generated_title = normalize_single_line(self.generated_title)
         if not self.access_token:
             self.access_token = secrets.token_urlsafe(32)
         if not self.generated_title and self.recipient_name:

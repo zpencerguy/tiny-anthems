@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 
 from apps.billing.services import ensure_beta_credit_packs, get_credit_balance
 from apps.generation.services import start_generation
+from apps.storage.services import get_download_url
 
 from .forms import SongRequestForm
 from .models import ShareLink, SongRequest, SongRequestStatus
@@ -40,20 +41,21 @@ def song_detail(request, pk, token):
     song_request = _get_owned_song(pk, token)
     ensure_beta_credit_packs()
     balance = get_credit_balance(song_request.email)
+    final_asset = song_request.assets.filter(asset_type="final_mp3").order_by("-created_at").first()
     return render(
         request,
         "songs/detail.html",
-        {"song_request": song_request, "balance": balance},
+        {"song_request": song_request, "balance": balance, "final_asset": final_asset},
     )
 
 
 def song_status(request, pk, token):
     song_request = _get_owned_song(pk, token)
     latest_job = song_request.generation_jobs.order_by("-created_at").first()
-    latest_asset = song_request.assets.order_by("-created_at").first()
+    latest_asset = song_request.assets.filter(asset_type="final_mp3").order_by("-created_at").first()
     asset_url = ""
     if latest_asset:
-        asset_url = latest_asset.public_url or f"/media/{latest_asset.storage_key}"
+        asset_url = get_download_url(latest_asset, request=request, token=song_request.access_token)
     return JsonResponse(
         {
             "song_status": song_request.status,
@@ -105,4 +107,7 @@ def public_share(request, token):
     if share_link.song_request.status != SongRequestStatus.COMPLETED:
         raise Http404
     ShareLink.objects.filter(pk=share_link.pk).update(view_count=share_link.view_count + 1)
-    return render(request, "songs/share.html", {"share_link": share_link})
+    final_asset = (
+        share_link.song_request.assets.filter(asset_type="final_mp3").order_by("-created_at").first()
+    )
+    return render(request, "songs/share.html", {"share_link": share_link, "final_asset": final_asset})

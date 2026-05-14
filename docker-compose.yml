@@ -6,6 +6,34 @@ services:
       - .env.docker.example
     environment:
       RUN_MIGRATIONS: "true"
+      DEBUG: ${DEBUG:-true}
+      SECRET_KEY: ${SECRET_KEY:-change-me-for-local-docker}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8000}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-filesystem}
+      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME:-}
+      GCS_PROJECT_ID: ${GCS_PROJECT_ID:-}
+      GCS_SIGNED_URL_TTL_SECONDS: ${GCS_SIGNED_URL_TTL_SECONDS:-900}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+      DATABASE_URL: ${DATABASE_URL:-postgres://tiny_anthems:tiny_anthems@db:5432/tiny_anthems}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      CELERY_TASK_ALWAYS_EAGER: ${CELERY_TASK_ALWAYS_EAGER:-false}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-replace-with-stripe-secret-key}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-replace-with-stripe-webhook-secret}
+      STRIPE_PRICE_ID_CREDITS_1: ${STRIPE_PRICE_ID_CREDITS_1:-price_replace_me}
+      STRIPE_PRICE_ID_CREDITS_2: ${STRIPE_PRICE_ID_CREDITS_2:-price_replace_me}
+      STRIPE_PRICE_ID_CREDITS_3: ${STRIPE_PRICE_ID_CREDITS_3:-price_replace_me}
+      STRIPE_PRICE_ID_CREDITS_4: ${STRIPE_PRICE_ID_CREDITS_4:-price_replace_me}
+      STRIPE_PRICE_ID_CREDITS_5: ${STRIPE_PRICE_ID_CREDITS_5:-price_replace_me}
+      DEFAULT_MUSIC_PROVIDER: ${DEFAULT_MUSIC_PROVIDER:-elevenlabs}
+      ALLOW_MOCK_MUSIC_PROVIDER: ${ALLOW_MOCK_MUSIC_PROVIDER:-false}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-${eleven_labs_api_key:-}}
+      ELEVENLABS_MODEL_ID: ${ELEVENLABS_MODEL_ID:-music_v1}
+      ELEVENLABS_OUTPUT_FORMAT: ${ELEVENLABS_OUTPUT_FORMAT:-mp3_44100_128}
+      ELEVENLABS_TIMEOUT_SECONDS: ${ELEVENLABS_TIMEOUT_SECONDS:-180}
+      ELEVENLABS_USE_COMPOSITION_PLAN: ${ELEVENLABS_USE_COMPOSITION_PLAN:-false}
     ports:
       - "8000:8000"
     volumes:
@@ -20,6 +48,35 @@ services:
     command: celery -A config worker -l info
     env_file:
       - .env.docker.example
+    environment:
+      DEBUG: ${DEBUG:-true}
+      SECRET_KEY: ${SECRET_KEY:-change-me-for-local-docker}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8000}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-filesystem}
+      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME:-}
+      GCS_PROJECT_ID: ${GCS_PROJECT_ID:-}
+      GCS_SIGNED_URL_TTL_SECONDS: ${GCS_SIGNED_URL_TTL_SECONDS:-900}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+      DATABASE_URL: ${DATABASE_URL:-postgres://tiny_anthems:tiny_anthems@db:5432/tiny_anthems}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      CELERY_TASK_ALWAYS_EAGER: ${CELERY_TASK_ALWAYS_EAGER:-false}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-replace-with-stripe-secret-key}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-replace-with-stripe-webhook-secret}
+      STRIPE_PRICE_ID_CREDITS_1: ${STRIPE_PRICE_ID_CREDITS_1:-price_replace_me}
+      STRIPE_PRICE_ID_CREDITS_2: ${STRIPE_PRICE_ID_CREDITS_2:-price_replace_me}
+      STRIPE_PRICE_ID_CREDITS_3: ${STRIPE_PRICE_ID_CREDITS_3:-price_replace_me}
+      STRIPE_PRICE_ID_CREDITS_4: ${STRIPE_PRICE_ID_CREDITS_4:-price_replace_me}
+      STRIPE_PRICE_ID_CREDITS_5: ${STRIPE_PRICE_ID_CREDITS_5:-price_replace_me}
+      DEFAULT_MUSIC_PROVIDER: ${DEFAULT_MUSIC_PROVIDER:-elevenlabs}
+      ALLOW_MOCK_MUSIC_PROVIDER: ${ALLOW_MOCK_MUSIC_PROVIDER:-false}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-${eleven_labs_api_key:-}}
+      ELEVENLABS_MODEL_ID: ${ELEVENLABS_MODEL_ID:-music_v1}
+      ELEVENLABS_OUTPUT_FORMAT: ${ELEVENLABS_OUTPUT_FORMAT:-mp3_44100_128}
+      ELEVENLABS_TIMEOUT_SECONDS: ${ELEVENLABS_TIMEOUT_SECONDS:-180}
+      ELEVENLABS_USE_COMPOSITION_PLAN: ${ELEVENLABS_USE_COMPOSITION_PLAN:-false}
     volumes:
       - .:/app
       - media:/app/media
@@ -33,15 +90,11 @@ services:
       POSTGRES_DB: tiny_anthems
       POSTGRES_USER: tiny_anthems
       POSTGRES_PASSWORD: tiny_anthems
-    ports:
-      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
 
 volumes:
   postgres-data:

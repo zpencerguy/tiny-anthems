@@ -128,7 +128,7 @@ def create_pending_purchase(*, email, credit_pack):
 def create_checkout_session_url(request, purchase):
     import stripe
 
-    if not settings.STRIPE_SECRET_KEY:
+    if not _has_real_stripe_key(settings.STRIPE_SECRET_KEY):
         return reverse("billing:checkout_success") + f"?purchase={purchase.id}&dev=1"
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -145,6 +145,10 @@ def create_checkout_session_url(request, purchase):
     purchase.stripe_checkout_session_id = session.id
     purchase.save(update_fields=["stripe_checkout_session_id", "updated_at"])
     return session.url
+
+
+def _has_real_stripe_key(secret_key):
+    return bool(secret_key) and secret_key.startswith(("sk_test_", "sk_live_"))
 
 
 def complete_purchase_from_checkout_session(session):
