@@ -2,7 +2,8 @@
   const renderGenerationProgress = (form) => {
     const panel = form.closest(".action-panel");
     if (!panel) return;
-    panel.innerHTML = `
+    const progress = document.createElement("div");
+    progress.innerHTML = `
       <div class="generation-progress" role="status" aria-live="polite">
         <p class="eyebrow">Generating</p>
         <h2>Your tiny anthem is in the mix.</h2>
@@ -10,6 +11,8 @@
         <div class="progress-bars" aria-hidden="true"><span></span><span></span><span></span></div>
       </div>
     `;
+    form.before(progress.firstElementChild);
+    form.hidden = true;
   };
 
   const lockForm = (form) => {

@@ -17,6 +17,8 @@ def get_audio_duration_seconds(audio_bytes, mime_type):
 
     if mime_type in {"audio/wav", "audio/x-wav", "audio/wave"}:
         return _get_wav_duration_seconds(audio_bytes)
+    if mime_type in {"audio/mpeg", "audio/mp3"}:
+        return _get_mp3_duration_seconds(audio_bytes)
 
     return _get_duration_with_ffprobe(audio_bytes, mime_type)
 
@@ -44,6 +46,73 @@ def _get_wav_duration_seconds(audio_bytes):
             return wav.getnframes() / frame_rate
     except wave.Error as exc:
         raise AudioValidationError(f"Generated WAV is invalid: {exc}") from exc
+
+
+def _get_mp3_duration_seconds(audio_bytes):
+    offset = _skip_id3v2_tag(audio_bytes)
+    duration = 0.0
+    frame_count = 0
+
+    while offset + 4 <= len(audio_bytes):
+        header = int.from_bytes(audio_bytes[offset : offset + 4], "big")
+        frame = _parse_mp3_frame_header(header)
+        if frame is None:
+            offset += 1
+            continue
+
+        frame_length, samples_per_frame, sample_rate = frame
+        if frame_length <= 0:
+            offset += 1
+            continue
+        duration += samples_per_frame / sample_rate
+        frame_count += 1
+        offset += frame_length
+
+    if frame_count == 0:
+        raise AudioValidationError("Generated MP3 has no valid audio frames.")
+    return duration
+
+
+def _skip_id3v2_tag(audio_bytes):
+    if len(audio_bytes) < 10 or audio_bytes[:3] != b"ID3":
+        return 0
+    size = 0
+    for byte in audio_bytes[6:10]:
+        size = (size << 7) | (byte & 0x7F)
+    footer_size = 10 if audio_bytes[5] & 0x10 else 0
+    return 10 + size + footer_size
+
+
+def _parse_mp3_frame_header(header):
+    if (header & 0xFFE00000) != 0xFFE00000:
+        return None
+
+    version_bits = (header >> 19) & 0b11
+    layer_bits = (header >> 17) & 0b11
+    bitrate_index = (header >> 12) & 0b1111
+    sample_rate_index = (header >> 10) & 0b11
+    padding = (header >> 9) & 0b1
+
+    if version_bits == 0b01 or layer_bits != 0b01:
+        return None
+    if bitrate_index in {0, 0b1111} or sample_rate_index == 0b11:
+        return None
+
+    if version_bits == 0b11:
+        sample_rates = [44100, 48000, 32000]
+        bitrates = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
+        samples_per_frame = 1152
+        frame_length = int((144000 * bitrates[bitrate_index]) / sample_rates[sample_rate_index] + padding)
+    else:
+        sample_rates = {
+            0b10: [22050, 24000, 16000],
+            0b00: [11025, 12000, 8000],
+        }[version_bits]
+        bitrates = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160]
+        samples_per_frame = 576
+        frame_length = int((72000 * bitrates[bitrate_index]) / sample_rates[sample_rate_index] + padding)
+
+    return frame_length, samples_per_frame, sample_rates[sample_rate_index]
 
 
 def _get_duration_with_ffprobe(audio_bytes, mime_type):
