@@ -18,6 +18,12 @@ class HomePageTests(TestCase):
         self.assertContains(response, "$4.00")
         self.assertContains(response, "data-submit-lock")
         self.assertContains(response, "Opening checkout...")
+        self.assertContains(response, "<audio", count=5)
+        self.assertContains(response, "audio/samples/hero-sarah-birthday-banger")
+        self.assertContains(response, "audio/samples/birthday-anthem")
+        self.assertContains(response, "audio/samples/graduation-anthem")
+        self.assertContains(response, "audio/samples/promotion-anthem")
+        self.assertContains(response, "audio/samples/roast-anthem")
 
     def test_valid_song_request_redirects_to_review(self):
         response = self.client.post(

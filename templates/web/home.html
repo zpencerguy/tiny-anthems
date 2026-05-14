@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Tiny Anthems - Custom 15-second songs{% endblock %}
 {% block content %}
 <section class="hero">
@@ -16,7 +17,7 @@
     <h2>Sarah’s Birthday Banger</h2>
     <p>“Sarah brings the tacos and the chaos in style...”</p>
     <div class="waveform"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-    <button class="play-button" type="button">Play 0:15</button>
+    <audio controls preload="metadata" src="{% static 'audio/samples/hero-sarah-birthday-banger.mp3' %}"></audio>
   </div>
 </section>
 
@@ -34,10 +35,7 @@
         </div>
         <h3>{{ example.title }}</h3>
         <p>{{ example.snippet }}</p>
-        <div class="mini-player">
-          <button type="button">Play</button>
-          <div class="mini-wave"></div>
-        </div>
+        <audio controls preload="metadata" src="{% static example.audio %}"></audio>
         <small>{{ example.vibe }}</small>
       </article>
     {% endfor %}

@@ -11,6 +11,7 @@ EXAMPLES = [
         "vibe": "Funky Groove",
         "snippet": "Mike walks in late but somehow steals the show",
         "duration": "0:15",
+        "audio": "audio/samples/birthday-anthem.mp3",
     },
     {
         "title": "Sweet Graduation Song for Ava",
@@ -18,6 +19,7 @@ EXAMPLES = [
         "vibe": "Acoustic Sweet",
         "snippet": "Ava, you made the hard days sing",
         "duration": "0:15",
+        "audio": "audio/samples/graduation-anthem.mp3",
     },
     {
         "title": "Promotion Anthem for Jess",
@@ -25,6 +27,7 @@ EXAMPLES = [
         "vibe": "Pop Anthem",
         "snippet": "Jess got the title and the group chat crown",
         "duration": "0:15",
+        "audio": "audio/samples/promotion-anthem.mp3",
     },
     {
         "title": "Light Roast for Danny",
@@ -32,6 +35,7 @@ EXAMPLES = [
         "vibe": "Club Banger",
         "snippet": "Danny says five minutes, see you next year",
         "duration": "0:15",
+        "audio": "audio/samples/roast-anthem.mp3",
     },
 ]
 
