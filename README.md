@@ -107,11 +107,11 @@ GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8000/accounts/google/callback/
 This repo includes a Render blueprint in `render.yaml` based on Render's Django deployment guide. The blueprint creates:
 
 - Django web service
-- Celery worker service
 - Postgres database
-- Redis instance
 
-After creating the blueprint in Render, set these secrets/env vars on both the web and worker services unless noted:
+For a low-cost beta deploy, Render runs generation eagerly in the web service with `CELERY_TASK_ALWAYS_EAGER=true`. Add Redis and a separate worker later when traffic justifies the extra monthly cost.
+
+After creating the blueprint in Render, set these secrets/env vars on the web service:
 
 ```bash
 APP_BASE_URL=https://your-render-service.onrender.com
