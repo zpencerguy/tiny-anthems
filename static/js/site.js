@@ -28,16 +28,14 @@
   document.addEventListener("submit", (event) => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-submit-lock")) return;
-    event.preventDefault();
-    if (form.dataset.locked === "true") return;
+    if (form.dataset.locked === "true") {
+      event.preventDefault();
+      return;
+    }
 
     lockForm(form);
     if (form.hasAttribute("data-progress-on-submit")) {
       renderGenerationProgress(form);
     }
-
-    requestAnimationFrame(() => {
-      HTMLFormElement.prototype.submit.call(form);
-    });
   });
 })();
