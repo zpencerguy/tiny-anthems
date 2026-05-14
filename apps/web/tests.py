@@ -2,7 +2,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from apps.billing.services import ensure_beta_credit_packs
+from apps.billing.models import Purchase
+from apps.billing.services import ensure_beta_credit_packs, grant_credits_for_purchase
 from apps.billing.services import get_credit_balance
 from apps.songs.models import ShareLink, SongRequest, SongRequestStatus
 from apps.storage.models import SongAsset
@@ -15,6 +16,8 @@ class HomePageTests(TestCase):
         self.assertContains(response, "Funky Birthday Song for Mike")
         self.assertContains(response, "$1.00")
         self.assertContains(response, "$4.00")
+        self.assertContains(response, "data-submit-lock")
+        self.assertContains(response, "Opening checkout...")
 
     def test_valid_song_request_redirects_to_review(self):
         response = self.client.post(
@@ -156,6 +159,30 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse("songs:detail", args=[song.pk, song.access_token]))
         self.assertContains(response, "Your tiny anthem is in the mix.")
         self.assertContains(response, reverse("songs:status", args=[song.pk, song.access_token]))
+
+    def test_song_detail_generate_form_shows_immediate_progress_on_submit(self):
+        pack = ensure_beta_credit_packs()[0]
+        purchase = Purchase.objects.create(
+            email="status@example.com",
+            credit_pack=pack,
+            amount_cents=pack.price_cents,
+        )
+        grant_credits_for_purchase(purchase, source_id="cs_progress_form")
+        song = SongRequest.objects.create(
+            email="status@example.com",
+            status=SongRequestStatus.DRAFT,
+            occasion="promotion",
+            recipient_name="Jess",
+            relationship="coworker",
+            personal_details="Jess got promoted after rescuing every Friday deadline.",
+            vibe="pop_anthem",
+            tone="party_energy",
+        )
+
+        response = self.client.get(reverse("songs:detail", args=[song.pk, song.access_token]))
+
+        self.assertContains(response, "data-progress-on-submit")
+        self.assertContains(response, "Generating...")
 
     def test_checkout_requires_email(self):
         pack = ensure_beta_credit_packs()[0]

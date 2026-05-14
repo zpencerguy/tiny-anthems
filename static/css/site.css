@@ -139,6 +139,12 @@ button {
   padding: 14px 20px;
 }
 
+button:disabled,
+.button[aria-disabled="true"] {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .primary {
   background: var(--coral);
   color: white;

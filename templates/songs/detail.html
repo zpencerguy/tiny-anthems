@@ -34,7 +34,7 @@
       </div>
     {% elif song_request.status == "failed" %}
       <p>Something went sideways while making this song. We refunded your credit so you can try again.</p>
-      <form method="post" action="{% url 'songs:generate' song_request.pk song_request.access_token %}">
+      <form method="post" action="{% url 'songs:generate' song_request.pk song_request.access_token %}" data-submit-lock data-progress-on-submit data-loading-text="Starting...">
         {% csrf_token %}
         <label class="checkbox-row">
           <input type="checkbox" name="terms" required>
@@ -44,7 +44,7 @@
       </form>
     {% elif balance > 0 %}
       <p>Spend 1 credit to generate this custom 15-second song.</p>
-      <form method="post" action="{% url 'songs:generate' song_request.pk song_request.access_token %}">
+      <form method="post" action="{% url 'songs:generate' song_request.pk song_request.access_token %}" data-submit-lock data-progress-on-submit data-loading-text="Generating...">
         {% csrf_token %}
         <label class="checkbox-row">
           <input type="checkbox" name="terms" required>
