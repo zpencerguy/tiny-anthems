@@ -8,7 +8,6 @@ services:
     runtime: python
     plan: free
     buildCommand: ./build.sh
-    preDeployCommand: python manage.py migrate --no-input
     startCommand: gunicorn config.wsgi:application
     healthCheckPath: /healthz/
     envVars:

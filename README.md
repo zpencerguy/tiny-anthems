@@ -109,7 +109,7 @@ This repo includes a Render blueprint in `render.yaml` based on Render's Django 
 - Django web service
 - Postgres database
 
-For a low-cost beta deploy, Render runs generation eagerly in the web service with `CELERY_TASK_ALWAYS_EAGER=true`. Add Redis and a separate worker later when traffic justifies the extra monthly cost.
+For a low-cost beta deploy, Render runs generation eagerly in the web service with `CELERY_TASK_ALWAYS_EAGER=true`. Migrations run in `build.sh` because free web services do not support pre-deploy commands. Add Redis and a separate worker later when traffic justifies the extra monthly cost.
 
 After creating the blueprint in Render, set these secrets/env vars on the web service:
 
