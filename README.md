@@ -147,7 +147,7 @@ STRIPE_PRICE_ID_CREDITS_5=price_...
 Add the Render callback URL to Google OAuth and point Stripe webhooks at:
 
 ```text
-https://your-render-service.onrender.com/stripe/webhook/
+https://your-render-service.onrender.com/api/stripe/webhook/
 ```
 
 ## Music Generation
