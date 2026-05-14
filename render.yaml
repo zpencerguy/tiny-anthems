@@ -15,6 +15,10 @@ services:
         value: 3.13.4
       - key: DEBUG
         value: false
+      - key: APP_BASE_URL
+        value: https://tiny-anthems-web.onrender.com
+      - key: ALLOWED_HOSTS
+        value: tiny-anthems-web.onrender.com
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
@@ -36,7 +40,7 @@ services:
       - key: GOOGLE_OAUTH_CLIENT_SECRET
         sync: false
       - key: GOOGLE_OAUTH_REDIRECT_URI
-        sync: false
+        value: https://tiny-anthems-web.onrender.com/accounts/google/callback/
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET

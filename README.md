@@ -114,8 +114,8 @@ For a low-cost beta deploy, Render runs generation eagerly in the web service wi
 After creating the blueprint in Render, set these secrets/env vars on the web service:
 
 ```bash
-APP_BASE_URL=https://your-render-service.onrender.com
-ALLOWED_HOSTS=your-render-service.onrender.com
+APP_BASE_URL=https://tiny-anthems-web.onrender.com
+ALLOWED_HOSTS=tiny-anthems-web.onrender.com
 DEFAULT_FROM_EMAIL=Tiny Anthems <hello@yourdomain.com>
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=your-email-host
@@ -128,7 +128,7 @@ GCS_PROJECT_ID=your-gcp-project-id
 GCS_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 GOOGLE_OAUTH_CLIENT_ID=replace-with-google-client-id
 GOOGLE_OAUTH_CLIENT_SECRET=replace-with-google-client-secret
-GOOGLE_OAUTH_REDIRECT_URI=https://your-render-service.onrender.com/accounts/google/callback/
+GOOGLE_OAUTH_REDIRECT_URI=https://tiny-anthems-web.onrender.com/accounts/google/callback/
 STRIPE_SECRET_KEY=replace-with-stripe-secret-key
 STRIPE_WEBHOOK_SECRET=replace-with-stripe-webhook-secret
 ELEVENLABS_API_KEY=replace-with-real-key
@@ -147,7 +147,7 @@ STRIPE_PRICE_ID_CREDITS_5=price_...
 Add the Render callback URL to Google OAuth and point Stripe webhooks at:
 
 ```text
-https://your-render-service.onrender.com/api/stripe/webhook/
+https://tiny-anthems-web.onrender.com/api/stripe/webhook/
 ```
 
 ## Music Generation
