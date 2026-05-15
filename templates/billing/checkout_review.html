@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Review Credits - Tiny Anthems{% endblock %}
+{% block content %}
+<section class="share-page">
+  <div class="share-card">
+    <p class="eyebrow">Review purchase</p>
+    <h1>{{ pack.credits_included }} credit{% if pack.credits_included != 1 %}s{% endif %}</h1>
+    <p>1 credit = 1 custom song. Credits will be added to {{ email }} after checkout succeeds.</p>
+    <div class="purchase-summary">
+      <div>
+        <span>Credit pack</span>
+        <strong>{{ pack.name }}</strong>
+      </div>
+      <div>
+        <span>Total</span>
+        <strong>${{ pack.price_dollars|floatformat:2 }}</strong>
+      </div>
+    </div>
+    <form method="post" action="{% url 'billing:checkout' %}" data-submit-lock data-loading-text="Opening checkout...">
+      {% csrf_token %}
+      <input type="hidden" name="pack" value="{{ pack.slug }}">
+      <input type="hidden" name="email" value="{{ email }}">
+      <div class="button-row">
+        <button class="button primary" type="submit">Confirm and Pay</button>
+        <a class="button secondary" href="{% url 'web:home' %}#pricing">Change Pack</a>
+      </div>
+    </form>
+    <p class="form-note">You will review payment details in Stripe before the card is charged.</p>
+  </div>
+</section>
+{% endblock %}

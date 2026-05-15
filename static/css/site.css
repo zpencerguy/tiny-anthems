@@ -524,6 +524,27 @@ input[type="checkbox"] {
   justify-content: center;
 }
 
+.purchase-summary {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.purchase-summary div {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.purchase-summary span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .history-row {
   align-items: center;
   background: white;

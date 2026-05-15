@@ -17,7 +17,8 @@ class HomePageTests(TestCase):
         self.assertContains(response, "$1.49")
         self.assertContains(response, "$4.99")
         self.assertContains(response, "data-submit-lock")
-        self.assertContains(response, "Opening checkout...")
+        self.assertContains(response, "Reviewing...")
+        self.assertContains(response, reverse("billing:checkout_review"))
         self.assertContains(response, "<audio", count=5)
         self.assertContains(response, "audio/samples/hero-sarah-birthday-banger")
         self.assertContains(response, "audio/samples/birthday-anthem")
@@ -201,6 +202,40 @@ class HomePageTests(TestCase):
         response = self.client.post(reverse("billing:checkout"), {"pack": pack.slug})
         self.assertEqual(response.status_code, 400)
 
+    def test_checkout_review_confirms_pack_before_payment(self):
+        pack = ensure_beta_credit_packs()[1]
+        response = self.client.post(
+            reverse("billing:checkout_review"),
+            {"pack": pack.slug, "email": "Buyer@Example.com"},
+        )
+        self.assertRedirects(response, reverse("billing:checkout_review"))
+
+        review_response = self.client.get(reverse("billing:checkout_review"))
+
+        self.assertContains(review_response, "Review purchase")
+        self.assertContains(review_response, "2 credits")
+        self.assertContains(review_response, "buyer@example.com")
+        self.assertContains(review_response, "$2.79")
+        self.assertContains(review_response, "Confirm and Pay")
+        self.assertContains(review_response, "data-submit-lock")
+
+    def test_checkout_review_uses_logged_in_email(self):
+        user = get_user_model().objects.create_user(
+            username="account@example.com",
+            email="account@example.com",
+        )
+        self.client.force_login(user)
+        pack = ensure_beta_credit_packs()[0]
+
+        self.client.post(
+            reverse("billing:checkout_review"),
+            {"pack": pack.slug, "email": "different@example.com"},
+        )
+        response = self.client.get(reverse("billing:checkout_review"))
+
+        self.assertContains(response, "account@example.com")
+        self.assertNotContains(response, "different@example.com")
+
     def test_dev_checkout_success_grants_credits(self):
         pack = ensure_beta_credit_packs()[1]
         response = self.client.post(
@@ -210,7 +245,26 @@ class HomePageTests(TestCase):
         self.assertEqual(response.status_code, 302)
         success_response = self.client.get(response["Location"])
         self.assertEqual(success_response.status_code, 200)
+        self.assertContains(success_response, "2 credits were added to dev@example.com")
         self.assertEqual(get_credit_balance("dev@example.com"), 2)
+
+    def test_checkout_success_waits_for_stripe_webhook_before_claiming_ready(self):
+        pack = ensure_beta_credit_packs()[0]
+        Purchase.objects.create(
+            email="pending@example.com",
+            credit_pack=pack,
+            amount_cents=pack.price_cents,
+            stripe_checkout_session_id="cs_pending",
+        )
+
+        response = self.client.get(
+            reverse("billing:checkout_success"),
+            {"session_id": "cs_pending"},
+        )
+
+        self.assertContains(response, "Your credits are on the way.")
+        self.assertNotContains(response, "were added to pending@example.com")
+        self.assertEqual(get_credit_balance("pending@example.com"), 0)
 
     def test_placeholder_stripe_key_uses_dev_checkout(self):
         pack = ensure_beta_credit_packs()[0]

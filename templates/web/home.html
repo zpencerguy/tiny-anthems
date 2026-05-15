@@ -76,7 +76,7 @@
   </div>
   <div class="price-grid">
     {% for pack in packs %}
-      <form class="price-card" method="post" action="{% url 'billing:checkout' %}" data-submit-lock data-loading-text="Opening checkout...">
+      <form class="price-card" method="post" action="{% url 'billing:checkout_review' %}" data-submit-lock data-loading-text="Reviewing...">
         {% csrf_token %}
         <input type="hidden" name="pack" value="{{ pack.slug }}">
         <h3>{{ pack.credits_included }} Credit{% if pack.credits_included != 1 %}s{% endif %}</h3>
@@ -86,7 +86,7 @@
         {% else %}
           <label>Email for credits and song access<input type="email" name="email" required placeholder="you@example.com"></label>
         {% endif %}
-        <button class="button primary" type="submit">Buy Credits</button>
+        <button class="button primary" type="submit">Review Credits</button>
       </form>
     {% endfor %}
   </div>
