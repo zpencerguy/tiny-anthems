@@ -2,20 +2,20 @@ from django.db import models
 
 
 class SongAsset(models.Model):
-    ASSET_TYPES = [
-        ("raw_audio", "Raw Audio"),
-        ("final_mp3", "Final MP3"),
-        ("waveform_json", "Waveform JSON"),
-        ("cover_image", "Cover Image"),
-        ("video_card", "Video Card"),
-    ]
+    class AssetType(models.TextChoices):
+        RAW_AUDIO = "raw_audio", "Raw Audio"
+        FINAL_MP3 = "final_mp3", "Final MP3"
+        WAVEFORM_JSON = "waveform_json", "Waveform JSON"
+        COVER_IMAGE = "cover_image", "Cover Image"
+        VIDEO_CARD = "video_card", "Video Card"
+
     song_request = models.ForeignKey(
         "songs.SongRequest", on_delete=models.CASCADE, related_name="assets"
     )
     generation_job = models.ForeignKey(
         "generation.GenerationJob", on_delete=models.SET_NULL, null=True, blank=True
     )
-    asset_type = models.CharField(max_length=40, choices=ASSET_TYPES)
+    asset_type = models.CharField(max_length=40, choices=AssetType.choices)
     storage_key = models.CharField(max_length=500)
     public_url = models.URLField(blank=True)
     mime_type = models.CharField(max_length=100)

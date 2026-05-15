@@ -12,6 +12,8 @@ from django.urls import reverse
 from apps.billing.models import Purchase
 from apps.billing.services import get_credit_balance
 from apps.songs.models import SongRequest
+from apps.storage.models import SongAsset
+from apps.storage.services import get_download_url
 
 from .forms import EmailLoginForm
 from .services import consume_email_login_token, get_or_create_email_user, send_email_login_link
@@ -20,7 +22,34 @@ from .services import consume_email_login_token, get_or_create_email_user, send_
 @login_required(login_url="accounts:login")
 def dashboard(request):
     email = request.user.email
-    songs = SongRequest.objects.filter(email=email).order_by("-created_at")[:12]
+    songs = list(
+        SongRequest.objects.filter(email=email)
+        .prefetch_related("assets", "share_links")
+        .order_by("-created_at")[:12]
+    )
+    for song in songs:
+        assets_by_newest = sorted(song.assets.all(), key=lambda asset: asset.created_at, reverse=True)
+        shares_by_newest = sorted(song.share_links.all(), key=lambda share: share.created_at, reverse=True)
+        final_asset = next(
+            (asset for asset in assets_by_newest if asset.asset_type == SongAsset.AssetType.FINAL_MP3),
+            None,
+        )
+        active_share = next(
+            (share for share in shares_by_newest if share.is_active),
+            None,
+        )
+        song.final_asset = final_asset
+        song.download_url = (
+            get_download_url(final_asset, request=request, token=song.access_token)
+            if final_asset
+            else ""
+        )
+        song.active_share = active_share
+        song.share_url = (
+            request.build_absolute_uri(reverse("songs:public_share", args=[active_share.token]))
+            if active_share
+            else ""
+        )
     purchases = Purchase.objects.filter(email=email).order_by("-created_at")[:8]
     return render(
         request,

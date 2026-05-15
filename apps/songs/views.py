@@ -1,10 +1,12 @@
 from django.contrib import messages
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.billing.services import ensure_beta_credit_packs, get_credit_balance
 from apps.generation.services import start_generation
+from apps.storage.models import SongAsset
 from apps.storage.services import get_download_url
 
 from .forms import SongRequestForm
@@ -41,7 +43,11 @@ def song_detail(request, pk, token):
     song_request = _get_owned_song(pk, token)
     ensure_beta_credit_packs()
     balance = get_credit_balance(song_request.email)
-    final_asset = song_request.assets.filter(asset_type="final_mp3").order_by("-created_at").first()
+    final_asset = (
+        song_request.assets.filter(asset_type=SongAsset.AssetType.FINAL_MP3)
+        .order_by("-created_at")
+        .first()
+    )
     return render(
         request,
         "songs/detail.html",
@@ -52,7 +58,11 @@ def song_detail(request, pk, token):
 def song_status(request, pk, token):
     song_request = _get_owned_song(pk, token)
     latest_job = song_request.generation_jobs.order_by("-created_at").first()
-    latest_asset = song_request.assets.filter(asset_type="final_mp3").order_by("-created_at").first()
+    latest_asset = (
+        song_request.assets.filter(asset_type=SongAsset.AssetType.FINAL_MP3)
+        .order_by("-created_at")
+        .first()
+    )
     asset_url = ""
     if latest_asset:
         asset_url = get_download_url(latest_asset, request=request, token=song_request.access_token)
@@ -108,6 +118,15 @@ def public_share(request, token):
         raise Http404
     ShareLink.objects.filter(pk=share_link.pk).update(view_count=share_link.view_count + 1)
     final_asset = (
-        share_link.song_request.assets.filter(asset_type="final_mp3").order_by("-created_at").first()
+        share_link.song_request.assets.filter(asset_type=SongAsset.AssetType.FINAL_MP3)
+        .order_by("-created_at")
+        .first()
     )
-    return render(request, "songs/share.html", {"share_link": share_link, "final_asset": final_asset})
+    share_url = request.build_absolute_uri(
+        reverse("songs:public_share", args=[share_link.token])
+    )
+    return render(
+        request,
+        "songs/share.html",
+        {"share_link": share_link, "final_asset": final_asset, "share_url": share_url},
+    )

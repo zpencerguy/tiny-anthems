@@ -18,14 +18,39 @@
       <h2>Your previous songs</h2>
     </div>
     {% if songs %}
-      <div class="history-list">
+      <div class="song-library">
         {% for song in songs %}
-          <article class="history-row">
-            <div>
-              <h3>{{ song.generated_title }}</h3>
-              <p>{{ song.get_occasion_display }} · {{ song.get_vibe_display }} · {{ song.get_status_display }}</p>
+          <article class="library-card">
+            <div class="card-topline">
+              <span>{{ song.get_occasion_display }}</span>
+              <span class="status-pill">{{ song.get_status_display }}</span>
             </div>
-            <a class="button secondary" href="{% url 'songs:detail' song.pk song.access_token %}">Open</a>
+            <div class="library-copy">
+              <h3>{{ song.generated_title }}</h3>
+              <p>{{ song.recipient_name }} · {{ song.get_vibe_display }} · {{ song.get_tone_display }}</p>
+            </div>
+            {% if song.final_asset %}
+              <audio controls preload="metadata" src="{{ song.download_url }}"></audio>
+            {% elif song.status == "failed" %}
+              <p class="form-note">Generation failed and the credit was refunded.</p>
+            {% else %}
+              <p class="form-note">Open this song to finish generating it.</p>
+            {% endif %}
+            <div class="button-row">
+              <a class="button secondary" href="{% url 'songs:detail' song.pk song.access_token %}">Open</a>
+              {% if song.final_asset %}
+                <a class="button secondary" href="{{ song.download_url }}" download>Download</a>
+                {% if song.share_url %}
+                  <a class="button secondary" href="{{ song.share_url }}">Share Page</a>
+                  <button class="button secondary" type="button" data-copy-text="{{ song.share_url }}">Copy Link</button>
+                {% else %}
+                  <form method="post" action="{% url 'songs:share' song.pk song.access_token %}">
+                    {% csrf_token %}
+                    <button class="button secondary" type="submit">Create Share Link</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </div>
           </article>
         {% endfor %}
       </div>

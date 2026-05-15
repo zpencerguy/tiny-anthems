@@ -38,4 +38,16 @@
       renderGenerationProgress(form);
     }
   });
+
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-copy-text]");
+    if (!button) return;
+    const text = button.dataset.copyText;
+    try {
+      await navigator.clipboard.writeText(text);
+      button.textContent = "Copied";
+    } catch {
+      window.prompt("Copy this link", text);
+    }
+  });
 })();

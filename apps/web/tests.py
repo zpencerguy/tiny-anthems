@@ -124,13 +124,19 @@ class HomePageTests(TestCase):
         )
         SongAsset.objects.create(
             song_request=song,
-            asset_type="final_mp3",
+            asset_type=SongAsset.AssetType.FINAL_MP3,
             storage_key="processed-audio/test.mp3",
             mime_type="audio/mpeg",
         )
         link = ShareLink.objects.create(song_request=song)
         response = self.client.get(reverse("songs:public_share", args=[link.token]))
         self.assertContains(response, "Jess")
+        self.assertContains(response, "<audio")
+        self.assertContains(response, "Download")
+        self.assertContains(response, "Copy Link")
+        self.assertContains(response, "Make Your Own")
+        self.assertContains(response, "og:title")
+        self.assertContains(response, reverse("songs:public_share", args=[link.token]))
         self.assertNotContains(response, "private@example.com")
         self.assertNotContains(response, "internal prompt should not leak")
 

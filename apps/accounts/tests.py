@@ -7,7 +7,8 @@ from datetime import timedelta
 
 from apps.billing.models import Purchase
 from apps.billing.services import ensure_beta_credit_packs, grant_credits_for_purchase
-from apps.songs.models import SongRequest
+from apps.songs.models import ShareLink, SongRequest, SongRequestStatus
+from apps.storage.models import SongAsset
 
 from .models import CustomerProfile, EmailLoginToken
 from .services import hash_login_token
@@ -72,8 +73,9 @@ class AccountLoginTests(TestCase):
             amount_cents=pack.price_cents,
         )
         grant_credits_for_purchase(purchase, source_id="cs_dashboard")
-        SongRequest.objects.create(
+        song = SongRequest.objects.create(
             email="singer@example.com",
+            status=SongRequestStatus.COMPLETED,
             occasion="birthday",
             recipient_name="Ari",
             relationship="friend",
@@ -81,12 +83,23 @@ class AccountLoginTests(TestCase):
             vibe="pop_anthem",
             tone="party_energy",
         )
+        SongAsset.objects.create(
+            song_request=song,
+            asset_type=SongAsset.AssetType.FINAL_MP3,
+            storage_key="processed-audio/ari.mp3",
+            mime_type="audio/mpeg",
+        )
+        share_link = ShareLink.objects.create(song_request=song)
 
         response = self.client.get(reverse("accounts:dashboard"))
 
         self.assertContains(response, "3 credits")
         self.assertContains(response, "Ari")
         self.assertContains(response, "Recent purchases")
+        self.assertContains(response, "<audio")
+        self.assertContains(response, "Download")
+        self.assertContains(response, "Copy Link")
+        self.assertContains(response, reverse("songs:public_share", args=[share_link.token]))
 
     def test_header_shows_logged_in_credit_balance(self):
         user = get_user_model().objects.create_user(username="singer@example.com", email="singer@example.com")

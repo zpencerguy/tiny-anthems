@@ -163,7 +163,7 @@ def run_generation_job(job_or_id):
         SongAsset.objects.create(
             song_request=song,
             generation_job=job,
-            asset_type="final_mp3",
+            asset_type=SongAsset.AssetType.FINAL_MP3,
             storage_key=final_upload["storage_key"],
             public_url=final_upload["public_url"],
             mime_type=result.mime_type,

@@ -45,7 +45,7 @@ class StorageServiceTests(TestCase):
         )
         asset = SongAsset.objects.create(
             song_request=song,
-            asset_type="final_mp3",
+            asset_type=SongAsset.AssetType.FINAL_MP3,
             storage_key=upload["storage_key"],
             mime_type="text/plain",
             metadata={"storage_backend": "filesystem"},
@@ -76,7 +76,7 @@ class StorageServiceTests(TestCase):
         )
         asset = SongAsset.objects.create(
             song_request=song,
-            asset_type="final_mp3",
+            asset_type=SongAsset.AssetType.FINAL_MP3,
             storage_key=upload["storage_key"],
             mime_type="text/plain",
             metadata={"storage_backend": "filesystem"},

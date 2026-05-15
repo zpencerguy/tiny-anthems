@@ -1,13 +1,32 @@
 {% extends "base.html" %}
 {% block title %}{{ share_link.song_request.generated_title }} - Tiny Anthems{% endblock %}
+{% block head %}
+  <meta property="og:title" content="{{ share_link.song_request.generated_title }} - Tiny Anthems">
+  <meta property="og:description" content="A custom tiny anthem made with Tiny Anthems.">
+  <meta property="og:type" content="music.song">
+  <meta property="og:url" content="{{ share_url }}">
+  <meta name="twitter:card" content="summary">
+{% endblock %}
 {% block content %}
 <section class="share-page">
-  <p class="eyebrow">{{ share_link.song_request.get_occasion_display }}</p>
-  <h1>{{ share_link.song_request.generated_title }}</h1>
-  {% with asset=final_asset %}
-    {% if asset %}<audio controls src="{% url 'storage:download' asset.id share_link.token %}"></audio>{% endif %}
-  {% endwith %}
-  <p>Made with Tiny Anthems.</p>
-  <a class="button primary" href="{% url 'songs:create' %}">Make Your Own</a>
+  <div class="share-card">
+    <p class="eyebrow">{{ share_link.song_request.get_occasion_display }}</p>
+    <h1>{{ share_link.song_request.generated_title }}</h1>
+    <p>{{ share_link.song_request.recipient_name }} · {{ share_link.song_request.get_vibe_display }} · {{ share_link.song_request.get_tone_display }}</p>
+    {% with asset=final_asset %}
+      {% if asset %}
+        {% url 'storage:download' asset.id share_link.token as share_download_url %}
+        <audio controls preload="metadata" src="{{ share_download_url }}"></audio>
+      {% endif %}
+      <div class="button-row centered">
+        {% if asset %}
+          <a class="button secondary" href="{{ share_download_url }}" download>Download</a>
+        {% endif %}
+        <button class="button secondary" type="button" data-copy-text="{{ share_url }}">Copy Link</button>
+        <a class="button primary" href="{% url 'songs:create' %}">Make Your Own</a>
+      </div>
+    {% endwith %}
+    <p class="form-note">Made with Tiny Anthems.</p>
+  </div>
 </section>
 {% endblock %}

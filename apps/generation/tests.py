@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from apps.billing.models import CreditLedgerEntry, Purchase
 from apps.billing.services import ensure_beta_credit_packs, get_credit_balance, grant_credits_for_purchase
 from apps.songs.models import SongRequest, SongRequestStatus
+from apps.storage.models import SongAsset
 
 from .models import GenerationJobStatus
 from .providers import (
@@ -183,7 +184,7 @@ class ElevenLabsGenerationServiceTests(TestCase):
         self.assertEqual(job.provider_response_metadata["validated_duration_seconds"], 15)
         self.assertIn("mayas-big-birthday-anthem", job.processed_audio_file.name)
         self.assertTrue(job.processed_audio_file.name.endswith(".mp3"))
-        final_asset = self.song.assets.get(asset_type="final_mp3")
+        final_asset = self.song.assets.get(asset_type=SongAsset.AssetType.FINAL_MP3)
         self.assertEqual(final_asset.metadata["storage_backend"], "filesystem")
         self.assertEqual(final_asset.metadata["source"], "provider_output")
         self.assertEqual(final_asset.storage_key, job.processed_audio_file.name)
