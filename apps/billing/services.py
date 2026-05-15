@@ -7,11 +7,11 @@ from .models import CreditEntryType, CreditLedgerEntry, CreditPack, Purchase, Pu
 
 
 BETA_PACKS = [
-    ("1-credit", "1 Credit", 1, 100),
-    ("2-credits", "2 Credits", 2, 190),
-    ("3-credits", "3 Credits", 3, 275),
-    ("4-credits", "4 Credits", 4, 350),
-    ("5-credits", "5 Credits", 5, 400),
+    ("1-credit", "1 Credit", 1, 149),
+    ("2-credits", "2 Credits", 2, 279),
+    ("3-credits", "3 Credits", 3, 399),
+    ("4-credits", "4 Credits", 4, 449),
+    ("5-credits", "5 Credits", 5, 499),
 ]
 
 

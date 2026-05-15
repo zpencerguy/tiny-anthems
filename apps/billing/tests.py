@@ -23,11 +23,11 @@ class CreditLedgerTests(TestCase):
     def test_beta_pack_prices(self):
         packs = ensure_beta_credit_packs()
         self.assertEqual([(p.credits_included, p.price_cents) for p in packs], [
-            (1, 100),
-            (2, 190),
-            (3, 275),
-            (4, 350),
-            (5, 400),
+            (1, 149),
+            (2, 279),
+            (3, 399),
+            (4, 449),
+            (5, 499),
         ])
 
     def test_idempotent_credit_grant(self):
